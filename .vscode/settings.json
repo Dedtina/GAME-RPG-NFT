@@ -56,5 +56,6 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "Time._RPG-Game-master.sln"
+    "dotnet.defaultSolution": "Time._RPG-Game-master.sln",
+    "git.ignoreLimitWarning": true
 }
