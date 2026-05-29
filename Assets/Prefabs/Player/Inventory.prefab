@@ -1,0 +1,68 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1217101331238953090
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3987710083571346505}
+  - component: {fileID: 5102063929439037303}
+  m_Layer: 0
+  m_Name: Inventory
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3987710083571346505
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1217101331238953090}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -57.3155, y: -3.2077763, z: 0.00039810425}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5102063929439037303
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1217101331238953090}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e274d8e1f8cd2b42a57f1adecec2164, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  startedPack:
+  - item: {fileID: 11400000, guid: 262a67c2fd0d23b44a73e6a5d5f8cfbe, type: 2}
+    stack: 30
+  - item: {fileID: 11400000, guid: c1504b56a0c0e834793bdfa9a6498db7, type: 2}
+    stack: 30
+  - item: {fileID: 11400000, guid: 015912ae1cf2dba4eb9c87feb48ebb7e, type: 2}
+    stack: 30
+  - item: {fileID: 11400000, guid: 624ee8f2e74d89342b5beac1d4a3bb89, type: 2}
+    stack: 30
+  - item: {fileID: 11400000, guid: edcd0bce7420ad143b3245fdbc3180d3, type: 2}
+    stack: 30
+  - item: {fileID: 11400000, guid: 7e4d7fe6490d52c458917a6e9d665848, type: 2}
+    stack: 30
+  - item: {fileID: 11400000, guid: 245a65579c4c9f04f9040c0f2b45e823, type: 2}
+    stack: 30
+  inventoryItems: []
+  stashItems: []
+  equippedItems: []
+  inventorySlotParent: {fileID: 0}
+  stashSlotParent: {fileID: 0}
+  equipmentSlotParent: {fileID: 0}
+  statSlotsParent: {fileID: 0}

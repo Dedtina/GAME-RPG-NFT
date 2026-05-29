@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
+    <title>{{{ PRODUCT_NAME }}}</title>
+    <link rel="shortcut icon" href="TemplateData/favicon.ico" />
+    <link rel="stylesheet" href="TemplateData/style.css" />
+  </head>
+  <body class="{{{ SPLASH_SCREEN_STYLE.toLowerCase() }}}">
+    <div id="unity-container" class="unity-desktop">
+      <canvas id="unity-canvas"></canvas>
+    </div>
+    <div id="loading-cover" style="display: none">
+      <div id="unity-loading-bar">
+        <div id="unity-logo"></div>
+        <div id="unity-progress-bar-empty" style="display: none">
+          <div id="unity-progress-bar-full"></div>
+        </div>
+        <div class="spinner"></div>
+      </div>
+    </div>
+    <div id="unity-fullscreen-button" style="display: none"></div>
+    <script type="module">
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+            import {
+              getFirestore,
+              doc,
+              getDoc,
+              setDoc,
+              updateDoc,
+              deleteDoc,
+              serverTimestamp
+            } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+            const firebaseConfig = {
+              apiKey: "AIzaSyB4HYIJMu7Pw4SMqwWZIQ5Ma3maRejE0fg",
+              authDomain: "datn-nft-game.firebaseapp.com",
+              projectId: "datn-nft-game",
+              storageBucket: "datn-nft-game.firebasestorage.app",
+              messagingSenderId: "262894137897",
+              appId: "1:262894137897:web:fcba94696e64aa06cf6238",
+              measurementId: "G-LZZZWPM00R"
+            };
+
+            const firebaseApp = initializeApp(firebaseConfig);
+            const firestoreDb = getFirestore(firebaseApp);
+            const localNftBackendUrl = "http://localhost:8787";
+
+            function createEmptyUnityDictionary() {
+              return {
+                keys: [],
+                values: []
+              };
+            }
+
+            function normalizeUnityDictionary(value) {
+              if (!value || !Array.isArray(value.keys) || !Array.isArray(value.values)) {
+                return createEmptyUnityDictionary();
+              }
+
+              return {
+                keys: value.keys,
+                values: value.values
+              };
+            }
+
+            function normalizeGameData(value) {
+              const data = value || {};
+              return {
+                currency: Number(data.currency || 0),
+                inventory: normalizeUnityDictionary(data.inventory),
+                stash: normalizeUnityDictionary(data.stash),
+                equipments: Array.isArray(data.equipments) ? data.equipments : [],
+                inventoryEquipments: Array.isArray(data.inventoryEquipments) ? data.inventoryEquipments : [],
+                equippedEquipments: Array.isArray(data.equippedEquipments) ? data.equippedEquipments : [],
+                skills: normalizeUnityDictionary(data.skills),
+                collectedWorldItems: normalizeUnityDictionary(data.collectedWorldItems)
+              };
+            }
+
+            function buildSplitSaveDocument(gameDataJson) {
+              let parsedGameData = {};
+              if (gameDataJson && gameDataJson.length > 0) {
+                parsedGameData = JSON.parse(gameDataJson);
+              }
+
+              return {
+                ...normalizeGameData(parsedGameData),
+                saveSchemaVersion: 2,
+                updatedAt: serverTimestamp()
+              };
+            }
+
+            window.FirebaseCreateOrLoadUser = async function(address, callbackObjectName) {
+              try {
+                if (!address) {
+                  throw new Error("Wallet address is empty.");
+                }
+
+                const userId = address.toLowerCase();
+                const userRef = doc(firestoreDb, "users", userId);
+                const userSnap = await getDoc(userRef);
+
+                let userData;
+                if (!userSnap.exists()) {
+                  userData = {
+                    walletAddress: userId,
+                    createdAt: Date.now(),
+                    lastLoginAt: Date.now()
+                  };
+
+                  await setDoc(userRef, {
+                    walletAddress: userId,
+                    createdAt: serverTimestamp(),
+                    lastLoginAt: serverTimestamp()
+                  });
+                } else {
+                  userData = userSnap.data();
+                  await updateDoc(userRef, {
+                    lastLoginAt: serverTimestamp()
+                  });
+                }
+
+                if (window.unityInstanceRef && callbackObjectName) {
+                  window.unityInstanceRef.SendMessage(
+                    callbackObjectName,
+                    "OnFirebaseUserLoaded",
+                    JSON.stringify(userData)
+                  );
+                }
+              } catch (error) {
+                console.error("FirebaseCreateOrLoadUser failed:", error);
+
+                if (window.unityInstanceRef && callbackObjectName) {
+                  window.unityInstanceRef.SendMessage(
+                    callbackObjectName,
+                    "OnFirebaseUserError",
+                    error.message || String(error)
+                  );
+                }
+              }
+            };
+
+            window.FirebaseLoadGameData = async function(userId, callbackObjectName) {
+              try {
+                if (!userId) {
+                  throw new Error("Firebase user id is empty.");
+                }
+
+                const normalizedUserId = userId.toLowerCase();
+                const saveRef = doc(firestoreDb, "users", normalizedUserId, "saves", "main");
+                const saveSnap = await getDoc(saveRef);
+
+                if (!window.unityInstanceRef || !callbackObjectName) {
+                  return;
+                }
+
+                if (!saveSnap.exists()) {
+                  window.unityInstanceRef.SendMessage(
+                    callbackObjectName,
+                    "OnFirebaseGameDataMissing",
+                    normalizedUserId
+                  );
+                  return;
+                }
+
+                const saveData = saveSnap.data();
+                const gameData = normalizeGameData(saveData);
+                window.unityInstanceRef.SendMessage(
+                  callbackObjectName,
+                  "OnFirebaseGameDataLoaded",
+                  JSON.stringify(gameData)
+                );
+              } catch (error) {
+                console.error("FirebaseLoadGameData failed:", error);
+
+                if (window.unityInstanceRef && callbackObjectName) {
+                  window.unityInstanceRef.SendMessage(
+                    callbackObjectName,
+                    "OnFirebaseGameDataError",
+                    error.message || String(error)
+                  );
+                }
+              }
+            };
+
+            window.FirebaseSaveGameData = async function(userId, gameDataJson, callbackObjectName) {
+              try {
+                if (!userId) {
+                  throw new Error("Firebase user id is empty.");
+                }
+
+                const normalizedUserId = userId.toLowerCase();
+                const userRef = doc(firestoreDb, "users", normalizedUserId);
+                const saveRef = doc(firestoreDb, "users", normalizedUserId, "saves", "main");
+                const splitSaveData = buildSplitSaveDocument(gameDataJson || "");
+
+                await setDoc(userRef, {
+                  walletAddress: normalizedUserId,
+                  lastLoginAt: serverTimestamp()
+                }, { merge: true });
+
+                await setDoc(saveRef, splitSaveData);
+
+                if (window.unityInstanceRef && callbackObjectName) {
+                  window.unityInstanceRef.SendMessage(
+                    callbackObjectName,
+                    "OnFirebaseGameDataSaved",
+                    normalizedUserId
+                  );
+                }
+              } catch (error) {
+                console.error("FirebaseSaveGameData failed:", error);
+
+                if (window.unityInstanceRef && callbackObjectName) {
+                  window.unityInstanceRef.SendMessage(
+                    callbackObjectName,
+                    "OnFirebaseGameDataError",
+                    error.message || String(error)
+                  );
+                }
+              }
+            };
+
+            window.FirebaseDeleteGameData = async function(userId, callbackObjectName) {
+              try {
+                if (!userId) {
+                  throw new Error("Firebase user id is empty.");
+                }
+
+                const normalizedUserId = userId.toLowerCase();
+                const saveRef = doc(firestoreDb, "users", normalizedUserId, "saves", "main");
+                await deleteDoc(saveRef);
+
+                if (window.unityInstanceRef && callbackObjectName) {
+                  window.unityInstanceRef.SendMessage(
+                    callbackObjectName,
+                    "OnFirebaseGameDataDeleted",
+                    normalizedUserId
+                  );
+                }
+              } catch (error) {
+                console.error("FirebaseDeleteGameData failed:", error);
+
+                if (window.unityInstanceRef && callbackObjectName) {
+                  window.unityInstanceRef.SendMessage(
+                    callbackObjectName,
+                    "OnFirebaseGameDataError",
+                    error.message || String(error)
+                  );
+                }
+              }
+            };
+
+            window.FirebaseConvertEquipmentToNFT = async function(walletAddress, itemId, instanceId, enhanceLevel, itemName, itemDescription, itemImageUri, contractAddress, callbackObjectName) {
+              try {
+                if (!walletAddress) {
+                  throw new Error("Wallet address is empty.");
+                }
+
+                if (!itemId) {
+                  throw new Error("Item id is empty.");
+                }
+
+                const response = await fetch(`${localNftBackendUrl}/convert-equipment-to-nft`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json"
+                  },
+                  body: JSON.stringify({
+                    walletAddress: walletAddress.toLowerCase(),
+                    itemId,
+                    instanceId,
+                    enhanceLevel,
+                    itemName,
+                    itemDescription,
+                    itemImageUri,
+                    contractAddress
+                  })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                  throw new Error(result.error || "Convert equipment to NFT failed.");
+                }
+
+                if (window.unityInstanceRef && callbackObjectName) {
+                  window.unityInstanceRef.SendMessage(
+                    callbackObjectName,
+                    "OnFirebaseEquipmentConverted",
+                    JSON.stringify(result || {})
+                  );
+                }
+              } catch (error) {
+                console.error("FirebaseConvertEquipmentToNFT failed:", error);
+
+                if (window.unityInstanceRef && callbackObjectName) {
+                  window.unityInstanceRef.SendMessage(
+                    callbackObjectName,
+                    "OnFirebaseEquipmentConvertError",
+                    error.message || String(error)
+                  );
+                }
+              }
+            };
+
+            const hideFullScreenButton = "{{{ HIDE_FULL_SCREEN_BUTTON }}}";
+            const buildUrl = "Build";
+            const loaderUrl = buildUrl + "/{{{ LOADER_FILENAME }}}";
+            const config = {
+              dataUrl: buildUrl + "/{{{ DATA_FILENAME }}}",
+              frameworkUrl: buildUrl + "/{{{ FRAMEWORK_FILENAME }}}",
+              codeUrl: buildUrl + "/{{{ CODE_FILENAME }}}",
+      #if MEMORY_FILENAME
+              memoryUrl: buildUrl + "/{{{ MEMORY_FILENAME }}}",
+      #endif
+      #if SYMBOLS_FILENAME
+              symbolsUrl: buildUrl + "/{{{ SYMBOLS_FILENAME }}}",
+      #endif
+              streamingAssetsUrl: "StreamingAssets",
+              companyName: "{{{ COMPANY_NAME }}}",
+              productName: "{{{ PRODUCT_NAME }}}",
+              productVersion: "{{{ PRODUCT_VERSION }}}",
+            };
+
+            const container = document.querySelector("#unity-container");
+            const canvas = document.querySelector("#unity-canvas");
+            const loadingCover = document.querySelector("#loading-cover");
+            const progressBarEmpty = document.querySelector("#unity-progress-bar-empty");
+            const progressBarFull = document.querySelector("#unity-progress-bar-full");
+            const fullscreenButton = document.querySelector("#unity-fullscreen-button");
+            const spinner = document.querySelector('.spinner');
+
+            const canFullscreen = (function() {
+              for (const key of [
+                  'exitFullscreen',
+                  'webkitExitFullscreen',
+                  'webkitCancelFullScreen',
+                  'mozCancelFullScreen',
+                  'msExitFullscreen',
+                ]) {
+                if (key in document) {
+                  return true;
+                }
+              }
+              return false;
+            }());
+
+            if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+              container.className = "unity-mobile";
+              config.devicePixelRatio = 1;
+            }
+      #if BACKGROUND_FILENAME
+            canvas.style.background = "url('" + buildUrl + "/{{{ BACKGROUND_FILENAME.replace(/'/g, '%27') }}}') center / cover";
+      #endif
+            loadingCover.style.display = "";
+            const script = document.createElement("script");
+            script.src = loaderUrl;
+            script.onload = () => {
+              import('./lib/thirdweb-unity-bridge.js').then(module => {
+                createUnityInstance(canvas, config, (progress) => {
+                  spinner.style.display = "none";
+                  progressBarEmpty.style.display = "";
+                  progressBarFull.style.width = `${100 * progress}%`;
+                }).then((unityInstance) => {
+                  window.unityInstanceRef = unityInstance;
+                  loadingCover.style.display = "none";
+                  if (canFullscreen) {
+                    if (!hideFullScreenButton) {
+                      fullscreenButton.style.display = "";
+                    }
+                    fullscreenButton.onclick = () => {
+                      unityInstance.SetFullscreen(1);
+                    };
+                  }
+                }).catch((message) => {
+                  alert(message);
+                });
+              });
+            };
+            document.body.appendChild(script);
+    </script>
+  </body>
+</html>

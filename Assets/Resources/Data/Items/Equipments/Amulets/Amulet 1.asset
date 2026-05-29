@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e5b665384586a8418bf97e4c71fa5b0, type: 3}
+  m_Name: Amulet 1
+  m_EditorClassIdentifier: 
+  itemType: 1
+  itemName: Amulet 1
+  icon: {fileID: -245851270, guid: a9ca9a41598dd2e44b125928045c518f, type: 3}
+  itemID: amulet_1
+  canConvertToNFT: 0
+  nftStandard: 0
+  nftContractAddress: 
+  nftImageUri: 
+  nftTokenId: 
+  equipmentType: 2
+  itemCooldown: 0
+  enhancementConfig: {fileID: 11400000, guid: e6a89fd0018340045a184298de9a501c, type: 2}
+  itemEffects: []
+  strength: 0
+  agility: 0
+  intelligent: 0
+  vitality: 0
+  maxHP: 0
+  armor: 0
+  evasion: 0
+  damage: 0
+  critChance: 0
+  critPower: 0
+  fireDamage: 0
+  iceDamage: 0
+  lightingDamage: 0
+  requiredMaterials:
+  - instanceId: 
+    data: {fileID: 11400000, guid: 262a67c2fd0d23b44a73e6a5d5f8cfbe, type: 2}
+    stack: 2
+    enhanceLevel: 0
+  - instanceId: 
+    data: {fileID: 11400000, guid: 624ee8f2e74d89342b5beac1d4a3bb89, type: 2}
+    stack: 1
+    enhanceLevel: 0
